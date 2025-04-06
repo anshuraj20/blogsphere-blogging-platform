@@ -19,8 +19,11 @@ import {
 
 // Mock auth state for demonstration
 const MOCK_AUTH = {
-  isAuthenticated: false,
-  user: null,
+  isAuthenticated: true, // Changed to true to show authenticated state by default
+  user: {
+    name: "Alex Johnson",
+    avatar: "https://randomuser.me/api/portraits/men/44.jpg"
+  },
   notifications: 3,
 };
 
@@ -70,8 +73,14 @@ const Navbar = () => {
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2">
-                    <User className="h-5 w-5" />
+                  <Button variant="ghost" className="gap-2 relative flex items-center">
+                    <div className="h-8 w-8 rounded-full overflow-hidden">
+                      <img 
+                        src={auth.user.avatar} 
+                        alt="Profile" 
+                        className="h-full w-full object-cover" 
+                      />
+                    </div>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>

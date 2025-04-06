@@ -5,7 +5,6 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MessageSquare, Heart, Share2, Bookmark } from "lucide-react";
 
@@ -106,35 +105,12 @@ const POST = {
   tags: ["writing", "mindfulness", "creativity", "productivity"],
   commentsCount: 24,
   likesCount: 152,
-  comments: [
-    {
-      id: "c1",
-      author: {
-        name: "Jamie Wilson",
-        avatar: "https://randomuser.me/api/portraits/women/72.jpg",
-      },
-      content: "This resonated with me so deeply. I've been struggling with my writing lately, and I think mindfulness might be the missing piece. Thank you for sharing these insights!",
-      publishedAt: "2025-03-22",
-      likesCount: 8,
-    },
-    {
-      id: "c2",
-      author: {
-        name: "Taylor Reed",
-        avatar: "https://randomuser.me/api/portraits/men/22.jpg",
-      },
-      content: "I've been practicing mindful writing for about a year now, and it's completely transformed my work. The section about setting intentions before writing sessions is especially important - it's helped me stay focused even on days when motivation is low.",
-      publishedAt: "2025-03-23",
-      likesCount: 12,
-    }
-  ]
 };
 
 const Post = () => {
   const { id } = useParams();
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [commentText, setCommentText] = useState("");
   
   // In a real app, we would fetch the post data based on the ID
   const post = POST;
@@ -253,50 +229,6 @@ const Post = () => {
               </div>
             </div>
           </article>
-          
-          {/* Comments section */}
-          <section className="bg-background rounded-lg shadow-lg p-6 md:p-10 mb-10">
-            <h2 className="font-serif text-2xl font-bold mb-6">Comments ({post.comments.length})</h2>
-            
-            {/* Comment form */}
-            <div className="mb-8">
-              <Textarea 
-                placeholder="Share your thoughts..." 
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="w-full min-h-[100px] mb-4"
-              />
-              <Button disabled={!commentText.trim()}>Post Comment</Button>
-            </div>
-            
-            {/* Comments list */}
-            <div className="space-y-6">
-              {post.comments.map((comment) => (
-                <div key={comment.id} className="border-b border-border pb-6">
-                  <div className="flex items-center gap-4 mb-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
-                      <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{comment.author.name}</div>
-                      <div className="text-xs text-muted-foreground">{comment.publishedAt}</div>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground mb-2">{comment.content}</p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <Button variant="ghost" size="sm" className="gap-1 h-auto px-2 py-1">
-                      <Heart className="h-4 w-4" />
-                      <span>{comment.likesCount}</span>
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-sm">
-                      Reply
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
         </div>
       </main>
       
