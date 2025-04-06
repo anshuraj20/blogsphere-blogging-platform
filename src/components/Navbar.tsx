@@ -1,12 +1,10 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
   PenSquare, 
-  User, 
   Bell, 
   ChevronDown 
 } from "lucide-react";
@@ -15,20 +13,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-
-// Mock auth state for demonstration
-const MOCK_AUTH = {
-  isAuthenticated: true, // Changed to true to show authenticated state by default
-  user: {
-    name: "Alex Johnson",
-    avatar: "https://randomuser.me/api/portraits/men/44.jpg"
-  },
-  notifications: 3,
-};
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-  const [auth] = useState(MOCK_AUTH);
+  const { user, isAuthenticated, notifications, signout } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleSignOut = () => {
+    signout();
+    navigate("/");
+  };
   
   return (
     <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50">
@@ -55,7 +51,7 @@ const Navbar = () => {
           <Link to="/categories" className="text-muted-foreground hover:text-foreground transition-colors">
             Categories
           </Link>
-          {auth.isAuthenticated ? (
+          {isAuthenticated && user ? (
             <>
               <Link to="/create-post">
                 <Button variant="outline" className="gap-2">
@@ -65,9 +61,9 @@ const Navbar = () => {
               </Link>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {auth.notifications > 0 && (
+                {notifications > 0 && (
                   <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white">
-                    {auth.notifications}
+                    {notifications}
                   </span>
                 )}
               </Button>
@@ -76,7 +72,7 @@ const Navbar = () => {
                   <Button variant="ghost" className="gap-2 relative flex items-center">
                     <div className="h-8 w-8 rounded-full overflow-hidden">
                       <img 
-                        src={auth.user.avatar} 
+                        src={user.avatar} 
                         alt="Profile" 
                         className="h-full w-full object-cover" 
                       />
@@ -85,16 +81,17 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Link to="/profile" className="w-full">Profile</Link>
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                    Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link to="/dashboard" className="w-full">Dashboard</Link>
+                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                    Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link to="/settings" className="w-full">Settings</Link>
+                  <DropdownMenuItem onClick={() => navigate("/settings")}>
+                    Settings
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-500">
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-red-500" onClick={handleSignOut}>
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>

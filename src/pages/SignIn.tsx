@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,26 +15,49 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const { toast } = useToast();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
     
-    // Simulate auth request
-    setTimeout(() => {
+    try {
+      const success = await login(email, password);
+      
+      if (success) {
+        toast({
+          title: "Sign in successful",
+          description: "Welcome back to BlogSphere!",
+        });
+        navigate("/");
+      } else {
+        setError("Invalid email or password. Please try again.");
+        toast({
+          title: "Sign in failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again later.");
       toast({
-        title: "Sign in successful",
-        description: "Welcome back to BlogSphere!",
+        title: "Sign in failed",
+        description: "An error occurred. Please try again later.",
+        variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
-      // In a real app, we would redirect to the dashboard
-    }, 1500);
+    }
   };
 
   return (
@@ -50,6 +73,11 @@ const SignIn = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 p-3 rounded-md text-red-500 text-sm">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -83,6 +111,9 @@ const SignIn = () => {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
+              <div className="text-sm text-center text-muted-foreground">
+                <p>Demo credentials: alex@example.com / password123</p>
+              </div>
             </form>
             
             <div className="mt-4">

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,27 +15,65 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignUp = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const { toast } = useToast();
+  const { signup } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
     
-    // Simulate auth request
-    setTimeout(() => {
-      toast({
-        title: "Account created",
-        description: "Welcome to BlogSphere! Your account has been created.",
-      });
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       setIsLoading(false);
-      // In a real app, we would redirect to the dashboard
-    }, 1500);
+      return;
+    }
+    
+    // Validate password strength
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const success = await signup(name, email, password);
+      
+      if (success) {
+        toast({
+          title: "Account created",
+          description: "Welcome to BlogSphere! Your account has been created.",
+        });
+        navigate("/");
+      } else {
+        setError("Email already exists. Please try a different email or sign in.");
+        toast({
+          title: "Sign up failed",
+          description: "Email already exists. Please try a different email.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again later.");
+      toast({
+        title: "Sign up failed",
+        description: "An error occurred. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,6 +89,11 @@ const SignUp = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 p-3 rounded-md text-red-500 text-sm">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -86,6 +129,17 @@ const SignUp = () => {
                 <p className="text-xs text-muted-foreground">
                   Password must be at least 8 characters with uppercase, lowercase, and numbers
                 </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Create account"}
