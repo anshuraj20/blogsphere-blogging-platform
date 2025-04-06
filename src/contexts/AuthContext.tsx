@@ -6,7 +6,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatar: string;
 }
 
 // Auth context type definition
@@ -29,7 +28,6 @@ const DEMO_USERS = [
     name: "Alex Johnson",
     email: "alex@example.com",
     password: "password123",
-    avatar: "https://randomuser.me/api/portraits/men/44.jpg",
   },
 ];
 
@@ -89,7 +87,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name,
           email,
           password,
-          avatar: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'men' : 'women'}/${Math.floor(Math.random() * 99)}.jpg`,
         };
         
         // Add to demo users array (would be a DB insert in real app)

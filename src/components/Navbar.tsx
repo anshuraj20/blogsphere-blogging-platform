@@ -6,7 +6,8 @@ import {
   Search, 
   PenSquare, 
   Bell, 
-  ChevronDown 
+  ChevronDown,
+  User
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -70,12 +71,8 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 relative flex items-center">
-                    <div className="h-8 w-8 rounded-full overflow-hidden">
-                      <img 
-                        src={user.avatar} 
-                        alt="Profile" 
-                        className="h-full w-full object-cover" 
-                      />
+                    <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                      <User className="h-4 w-4 text-gray-600" />
                     </div>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
