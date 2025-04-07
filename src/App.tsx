@@ -30,14 +30,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <Routes>
+      {/* Redirect to sign-in if not authenticated */}
+      <Route path="/" element={
+        isAuthenticated ? <ProtectedRoute><Index /></ProtectedRoute> : <Navigate to="/sign-in" replace />
+      } />
+      
+      {/* Public Routes */}
       <Route path="/sign-in" element={<SignIn />} />
       <Route path="/sign-up" element={<SignUp />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       
       {/* Protected Routes */}
-      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/post/:id" element={<ProtectedRoute><Post /></ProtectedRoute>} />
       <Route path="/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
       <Route path="/edit-post/:id" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
@@ -45,7 +52,7 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
       
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
