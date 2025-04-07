@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 import UserProfile from "./pages/UserProfile";
 import Dashboard from "./pages/Dashboard";
 import AdminPanel from "./pages/AdminPanel";
+import SearchResults from "./pages/SearchResults";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+      <Route path="/search" element={<ProtectedRoute><SearchResults /></ProtectedRoute>} />
       
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />

@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +21,18 @@ import { useAuth } from "@/contexts/AuthContext";
 const Navbar = () => {
   const { user, isAuthenticated, signout } = useAuth();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
   
   const handleSignOut = () => {
     signout();
     navigate("/sign-in");
+  };
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
   
   return (
@@ -34,14 +43,16 @@ const Navbar = () => {
         </Link>
         
         <div className="flex-1 max-w-md mx-auto px-4">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input 
               type="search" 
               placeholder="Search articles..." 
               className="pl-8 w-full bg-secondary/50"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </form>
         </div>
         
         <nav className="flex items-center gap-4">
