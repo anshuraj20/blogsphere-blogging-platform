@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import AIWritingAssistant from "@/components/AIWritingAssistant";
@@ -26,11 +26,13 @@ import {
   Save, 
   Image as ImageIcon, 
   FileText, 
-  Sparkles,
   Eye,
   PenSquare,
-  CheckCircle
+  CheckCircle,
+  Upload,
+  X,
 } from "lucide-react";
+import { useAuth, Post } from "@/contexts/AuthContext";
 
 // Mock data for categories
 const CATEGORIES = [
@@ -42,85 +44,193 @@ const CATEGORIES = [
   { value: "publishing", label: "Publishing" },
 ];
 
-const MOCK_POST = {
-  id: "1",
-  title: "The Art of Mindful Writing: Finding Your Creative Flow",
-  content: `In a world filled with distractions, finding your creative flow as a writer can seem like an elusive goal. Yet, the practice of mindful writing offers a path forward, allowing you to tap into deeper levels of creativity and produce work that truly resonates with readers.
-
-What is Mindful Writing?
-
-Mindful writing is the practice of bringing full attention to the writing process. It involves being present with your words, embracing the current moment without judgment, and letting go of distractions and self-criticism that often plague writers.
-
-Unlike rushed or forced writing, mindful writing creates space for ideas to emerge organically. It's about quality over quantity, depth over speed, and connection over perfection.
-
-Benefits of Mindful Writing
-
-The benefits of adopting a mindful approach to writing extend far beyond productivity:
-
-Reduced writer's block - By releasing the pressure to produce perfect prose immediately, mindfulness creates an environment where ideas can flow more freely.
-
-Deeper insights - When we slow down and truly engage with our writing, we often discover connections and perspectives that wouldn't emerge during rushed sessions.
-
-More authentic voice - Mindfulness helps quiet the inner critic and external influences that can dilute your unique voice.
-
-Greater resilience - A mindful approach builds the ability to stay with difficult emotions that writing can trigger, rather than avoiding challenging topics.`,
-  category: "writing",
-  tags: ["writing", "mindfulness", "creativity", "productivity"],
-  coverImage: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
-};
-
 const CreatePost = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, getUserPosts, addUserPost, updateUserPost } = useAuth();
   const isEditMode = !!id;
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   
   // Load post data if in edit mode
   useEffect(() => {
-    if (isEditMode) {
-      // Mock API call to get post data
-      setTimeout(() => {
-        setTitle(MOCK_POST.title);
-        setContent(MOCK_POST.content);
-        setCategory(MOCK_POST.category);
-        setTags(MOCK_POST.tags.join(", "));
-        setCoverImage(MOCK_POST.coverImage);
-      }, 500);
+    if (isEditMode && user) {
+      const userPosts = getUserPosts();
+      const post = userPosts.find(p => p.id === id);
+      
+      if (post) {
+        setTitle(post.title);
+        setContent(post.content);
+        setCategory(post.category);
+        setTags(post.tags.join(", "));
+        setCoverImage(post.coverImage);
+        setImagePreview(post.coverImage);
+      }
     }
-  }, [isEditMode]);
+  }, [isEditMode, id, user, getUserPosts]);
   
-  const handleSubmit = (e: React.FormEvent, isDraft: boolean = false) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const formatDate = () => {
+    const now = new Date();
+    return now.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+  
+  const handleImageSelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
     
-    // Simulate saving
-    setTimeout(() => {
-      setIsSubmitting(false);
+    if (files && files.length > 0) {
+      const file = files[0];
+      setImageFile(file);
+      
+      // Create a preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setImagePreview(result);
+        setCoverImage(""); // Clear external URL when file is selected
+      };
+      reader.readAsDataURL(file);
       
       toast({
-        title: isDraft ? "Draft saved" : "Post published",
-        description: isDraft 
-          ? "Your draft has been saved successfully" 
-          : "Your post has been published successfully",
+        title: "Image selected",
+        description: "Your cover image has been selected"
       });
+    }
+  };
+  
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+    setCoverImage("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+  
+  const handleExternalImageUrl = (url: string) => {
+    setCoverImage(url);
+    setImagePreview(url);
+    setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+  
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save your post",
+        variant: "destructive"
+      });
+      navigate("/sign-in");
+      return;
+    }
+    
+    if (!title.trim()) {
+      toast({
+        title: "Title required",
+        description: "Please add a title to your post",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    const tagsArray = tags
+      .split(",")
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+    
+    // Use either the file preview or external URL
+    const finalImageUrl = imagePreview || coverImage || "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d";
+    
+    try {
+      const currentDate = formatDate();
+      
+      if (isEditMode) {
+        // Update existing post
+        const success = updateUserPost(id, {
+          title,
+          content,
+          excerpt: content.substring(0, 150) + (content.length > 150 ? "..." : ""),
+          coverImage: finalImageUrl,
+          category,
+          tags: tagsArray,
+          status: isDraft ? "draft" : "published",
+          publishDate: isDraft ? undefined : currentDate,
+          lastEdit: currentDate,
+        });
+        
+        if (success) {
+          toast({
+            title: isDraft ? "Draft updated" : "Post updated",
+            description: isDraft 
+              ? "Your draft has been updated successfully" 
+              : "Your post has been updated successfully",
+          });
+        } else {
+          throw new Error("Failed to update post");
+        }
+      } else {
+        // Create new post
+        const newPost = addUserPost({
+          title,
+          content,
+          excerpt: content.substring(0, 150) + (content.length > 150 ? "..." : ""),
+          coverImage: finalImageUrl,
+          category,
+          tags: tagsArray,
+          status: isDraft ? "draft" : "published",
+          publishDate: isDraft ? undefined : currentDate,
+          lastEdit: currentDate,
+          views: 0,
+          commentsCount: 0,
+          likesCount: 0,
+        });
+        
+        toast({
+          title: isDraft ? "Draft saved" : "Post published",
+          description: isDraft 
+            ? "Your draft has been saved successfully" 
+            : "Your post has been published successfully",
+        });
+      }
       
       // Navigate to the post or dashboard
       navigate(isDraft ? "/dashboard" : `/post/${id || "new"}`);
-    }, 1500);
-  };
-  
-  const handleAISuggestion = (suggestion: string) => {
-    // In a real implementation, this would intelligently apply the suggestion
-    // For now, we'll just append it to the content as a demonstration
-    setContent((prev) => `${prev}\n\n[AI Suggestion Applied]: ${suggestion}`);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was an error saving your post. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -173,10 +283,10 @@ const CreatePost = () => {
                       </div>
                     </div>
                     
-                    {coverImage && (
+                    {(imagePreview || coverImage) && (
                       <div className="w-full aspect-video rounded-lg overflow-hidden mb-6">
                         <img 
-                          src={coverImage}
+                          src={imagePreview || coverImage}
                           alt={title} 
                           className="w-full h-full object-cover"
                         />
@@ -227,28 +337,75 @@ const CreatePost = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="cover-image">Cover Image URL</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="cover-image"
-                            placeholder="Enter image URL or upload"
-                            value={coverImage}
-                            onChange={(e) => setCoverImage(e.target.value)}
-                            className="flex-grow"
-                          />
-                          <Button variant="outline" type="button" className="flex-shrink-0">
-                            <ImageIcon className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        {coverImage && (
-                          <div className="mt-2 aspect-video w-full rounded-md border overflow-hidden">
-                            <img 
-                              src={coverImage} 
-                              alt="Cover preview" 
-                              className="w-full h-full object-cover"
+                        <Label htmlFor="cover-image">Cover Image</Label>
+                        
+                        <div className="flex flex-col gap-4">
+                          {/* Image upload area */}
+                          <div 
+                            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors ${imagePreview ? 'border-green-300 bg-green-50' : 'border-gray-300'}`}
+                            onClick={handleImageSelect}
+                          >
+                            <input 
+                              type="file" 
+                              ref={fileInputRef} 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={handleImageChange}
+                            />
+                            
+                            {imagePreview ? (
+                              <div className="relative">
+                                <img 
+                                  src={imagePreview} 
+                                  alt="Cover preview" 
+                                  className="mx-auto max-h-[200px] rounded-md"
+                                />
+                                <Button 
+                                  type="button" 
+                                  variant="destructive" 
+                                  size="icon"
+                                  className="absolute top-2 right-2 h-6 w-6"
+                                  onClick={(e) => { 
+                                    e.stopPropagation();
+                                    clearImage();
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center">
+                                <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                                <p className="text-sm font-medium">Click to upload image</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  JPG, PNG or GIF (max 5MB)
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Or use external URL */}
+                          <div className="text-center relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t"></span>
+                            </div>
+                            <div className="relative flex justify-center">
+                              <span className="bg-background px-2 text-xs text-muted-foreground">
+                                Or use external URL
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Input
+                              id="cover-image-url"
+                              placeholder="Enter image URL"
+                              value={coverImage}
+                              onChange={(e) => handleExternalImageUrl(e.target.value)}
+                              className="flex-grow"
                             />
                           </div>
-                        )}
+                        </div>
                       </div>
                       
                       <div className="space-y-2">
@@ -330,7 +487,7 @@ const CreatePost = () => {
             <div className="md:w-1/3 space-y-4">
               <AIWritingAssistant 
                 content={content} 
-                onSuggestionApply={handleAISuggestion} 
+                onContentUpdate={setContent} 
               />
               
               <Card>
@@ -362,29 +519,6 @@ const CreatePost = () => {
                     </div>
                     <p className="text-sm text-muted-foreground">Preview your post to see how it will appear to readers</p>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-blogSphere-600" />
-                    AI Tools
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Generate Title Ideas
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <FileText className="h-4 w-4" />
-                    Create Summary
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <ImageIcon className="h-4 w-4" />
-                    Suggest Cover Images
-                  </Button>
                 </CardContent>
               </Card>
             </div>

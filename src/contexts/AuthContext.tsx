@@ -8,14 +8,38 @@ export interface User {
   email: string;
 }
 
+// Post type definition
+export interface Post {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string;
+  coverImage: string;
+  author: {
+    name: string;
+    id: string;
+  };
+  category: string;
+  tags: string[];
+  status: "published" | "draft";
+  publishDate?: string;
+  lastEdit?: string;
+  views: number;
+  commentsCount: number;
+  likesCount: number;
+}
+
 // Auth context type definition
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  notifications: number;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   signout: () => void;
+  getUserPosts: () => Post[];
+  addUserPost: (post: Omit<Post, 'id' | 'author'>) => Post;
+  updateUserPost: (postId: string, updatedPost: Partial<Post>) => boolean;
+  deleteUserPost: (postId: string) => boolean;
 }
 
 // Create the context
@@ -34,7 +58,6 @@ const DEMO_USERS = [
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [notifications] = useState(3);
 
   // Check for existing session on component mount
   useEffect(() => {
@@ -109,8 +132,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("blogSphereUser");
   };
 
+  // Get user posts
+  const getUserPosts = (): Post[] => {
+    if (!user) return [];
+    
+    const storedPosts = localStorage.getItem(`blogSpherePosts-${user.id}`);
+    if (storedPosts) {
+      return JSON.parse(storedPosts);
+    }
+    
+    return [];
+  };
+
+  // Add a new post
+  const addUserPost = (post: Omit<Post, 'id' | 'author'>): Post => {
+    if (!user) throw new Error("User not authenticated");
+    
+    const newPost: Post = {
+      ...post,
+      id: `post-${Date.now()}`,
+      author: {
+        id: user.id,
+        name: user.name
+      }
+    };
+    
+    const currentPosts = getUserPosts();
+    const updatedPosts = [...currentPosts, newPost];
+    
+    localStorage.setItem(`blogSpherePosts-${user.id}`, JSON.stringify(updatedPosts));
+    
+    return newPost;
+  };
+
+  // Update an existing post
+  const updateUserPost = (postId: string, updatedPost: Partial<Post>): boolean => {
+    if (!user) return false;
+    
+    const currentPosts = getUserPosts();
+    const postIndex = currentPosts.findIndex(post => post.id === postId);
+    
+    if (postIndex === -1) return false;
+    
+    currentPosts[postIndex] = {
+      ...currentPosts[postIndex],
+      ...updatedPost,
+      lastEdit: new Date().toISOString()
+    };
+    
+    localStorage.setItem(`blogSpherePosts-${user.id}`, JSON.stringify(currentPosts));
+    
+    return true;
+  };
+
+  // Delete a post
+  const deleteUserPost = (postId: string): boolean => {
+    if (!user) return false;
+    
+    const currentPosts = getUserPosts();
+    const updatedPosts = currentPosts.filter(post => post.id !== postId);
+    
+    if (updatedPosts.length === currentPosts.length) return false;
+    
+    localStorage.setItem(`blogSpherePosts-${user.id}`, JSON.stringify(updatedPosts));
+    
+    return true;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, notifications, login, signup, signout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated, 
+      login, 
+      signup, 
+      signout,
+      getUserPosts,
+      addUserPost,
+      updateUserPost,
+      deleteUserPost
+    }}>
       {children}
     </AuthContext.Provider>
   );

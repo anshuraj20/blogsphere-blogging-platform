@@ -5,11 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { 
   Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+  CardContent,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { 
   Tabs, 
@@ -22,9 +20,7 @@ import {
   Edit, 
   Zap, 
   Scissors, 
-  Check, 
-  ArrowRight,
-  MessageSquare,
+  Check,
   RotateCw,
   ChevronDown
 } from "lucide-react";
@@ -34,48 +30,64 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
+import { checkGrammar, rewriteText } from "@/utils/textProcessor";
 
 interface AIWritingAssistantProps {
   content: string;
-  onSuggestionApply: (suggestion: string) => void;
+  onContentUpdate: (newContent: string) => void;
 }
 
-const AIWritingAssistant = ({ content, onSuggestionApply }: AIWritingAssistantProps) => {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showAssistant, setShowAssistant] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+const AIWritingAssistant = ({ content, onContentUpdate }: AIWritingAssistantProps) => {
+  const [isChecking, setIsChecking] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [grammarIssues, setGrammarIssues] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Mock function to simulate AI generating suggestions
-  const generateSuggestions = () => {
-    setIsGenerating(true);
+  // Run grammar check
+  const handleGrammarCheck = () => {
+    setIsChecking(true);
     
-    // Simulate API call delay
+    // Simulate processing delay
     setTimeout(() => {
-      const mockSuggestions = [
-        "Consider adding more specific examples to illustrate your point. This will help readers better understand and apply your insights.",
-        "The middle section could benefit from more concise phrasing. Try condensing the third paragraph to improve readability.",
-        "Your conclusion feels abrupt. Consider adding a call-to-action or suggesting next steps for readers interested in learning more.",
-      ];
+      const { corrected, issues } = checkGrammar(content);
       
-      setSuggestions(mockSuggestions);
-      setIsGenerating(false);
+      if (issues.length > 0) {
+        setGrammarIssues(issues);
+        onContentUpdate(corrected);
+        
+        toast({
+          title: "Grammar check complete",
+          description: `Found and fixed ${issues.length} issue${issues.length === 1 ? '' : 's'}.`,
+        });
+      } else {
+        setGrammarIssues([]);
+        
+        toast({
+          title: "Grammar check complete",
+          description: "No issues found in your content."
+        });
+      }
       
-      toast({
-        title: "Suggestions generated",
-        description: "AI has analyzed your content and provided recommendations.",
-      });
-    }, 2000);
+      setIsChecking(false);
+    }, 1500);
   };
 
-  const handleApplySuggestion = (suggestion: string) => {
-    onSuggestionApply(suggestion);
+  // Handle rewrite with specific style
+  const handleRewrite = (style: "simplify" | "formal" | "shorten") => {
+    setIsChecking(true);
     
-    toast({
-      title: "Suggestion applied",
-      description: "The AI suggestion has been incorporated into your content.",
-    });
+    // Simulate processing delay
+    setTimeout(() => {
+      const rewrittenText = rewriteText(content, style);
+      onContentUpdate(rewrittenText);
+      
+      toast({
+        title: "Content rewritten",
+        description: `Your content has been rewritten in ${style} style.`,
+      });
+      
+      setIsChecking(false);
+    }, 2000);
   };
 
   return (
@@ -100,136 +112,126 @@ const AIWritingAssistant = ({ content, onSuggestionApply }: AIWritingAssistantPr
         
         <CollapsibleContent>
           <div className="p-4 bg-white">
-            <Tabs defaultValue="suggestions">
+            <Tabs defaultValue="grammar">
               <TabsList className="mb-4">
-                <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
                 <TabsTrigger value="grammar">Grammar Check</TabsTrigger>
                 <TabsTrigger value="rewrite">Rewrite</TabsTrigger>
-                <TabsTrigger value="chat">Ask AI</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="suggestions">
+              <TabsContent value="grammar">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      Get intelligent suggestions to improve your writing
+                      Check your content for grammar and spelling issues
                     </p>
                     <Button 
-                      onClick={generateSuggestions} 
-                      disabled={isGenerating}
+                      onClick={handleGrammarCheck} 
+                      disabled={isChecking || !content}
                       size="sm"
                       className="gap-2"
                     >
-                      {isGenerating ? (
+                      {isChecking ? (
                         <>
                           <RotateCw className="h-4 w-4 animate-spin" />
-                          Analyzing...
+                          Checking...
                         </>
                       ) : (
                         <>
-                          <Sparkles className="h-4 w-4" />
-                          Analyze Content
+                          <Edit className="h-4 w-4" />
+                          Check Grammar
                         </>
                       )}
                     </Button>
                   </div>
                   
-                  {suggestions.length > 0 ? (
-                    <div className="space-y-3">
-                      {suggestions.map((suggestion, index) => (
-                        <Card key={index} className="overflow-hidden">
-                          <CardContent className="p-4">
-                            <p className="text-sm mb-3">{suggestion}</p>
-                            <div className="flex justify-end">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="gap-1"
-                                onClick={() => handleApplySuggestion(suggestion)}
-                              >
-                                <Check className="h-3 w-3" />
-                                Apply
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground text-sm">
-                      {isGenerating ? (
-                        <p>Analyzing your content for suggestions...</p>
-                      ) : (
-                        <p>Click "Analyze Content" to get AI-powered suggestions</p>
-                      )}
-                    </div>
+                  {grammarIssues.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm">Issues Found</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-1 text-sm">
+                          {grammarIssues.map((issue, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span>{issue}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
                   )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="grammar">
-                <div className="text-center py-10 space-y-3">
-                  <Edit className="h-10 w-10 text-muted-foreground mx-auto" />
-                  <p className="text-muted-foreground">
-                    Grammar and spelling check will appear here
-                  </p>
-                  <Button variant="outline" disabled>Run Grammar Check</Button>
+                  
+                  {grammarIssues.length === 0 && !isChecking && content && (
+                    <p className="text-sm text-center py-4 text-muted-foreground">
+                      Click "Check Grammar" to analyze your content
+                    </p>
+                  )}
+                  
+                  {!content && (
+                    <p className="text-sm text-center py-4 text-muted-foreground">
+                      Start writing to use the grammar checker
+                    </p>
+                  )}
                 </div>
               </TabsContent>
               
               <TabsContent value="rewrite">
                 <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Choose a style to rewrite your content
+                  </p>
+                  
                   <div className="grid grid-cols-3 gap-2">
-                    <Button variant="outline" size="sm" className="gap-1">
-                      <Zap className="h-3 w-3" />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      disabled={isChecking || !content}
+                      onClick={() => handleRewrite("simplify")}
+                    >
+                      {isChecking ? (
+                        <RotateCw className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Zap className="h-3 w-3" />
+                      )}
                       Simplify
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1">
-                      <Edit className="h-3 w-3" />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      disabled={isChecking || !content}
+                      onClick={() => handleRewrite("formal")}
+                    >
+                      {isChecking ? (
+                        <RotateCw className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Edit className="h-3 w-3" />
+                      )}
                       Formal
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1">
-                      <Scissors className="h-3 w-3" />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      disabled={isChecking || !content}
+                      onClick={() => handleRewrite("shorten")}
+                    >
+                      {isChecking ? (
+                        <RotateCw className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Scissors className="h-3 w-3" />
+                      )}
                       Shorten
                     </Button>
                   </div>
                   
-                  <div className="text-center py-6 text-muted-foreground text-sm">
-                    <p>Select text from your content and choose a rewrite style</p>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="chat">
-                <div className="space-y-4">
-                  <div className="bg-secondary/30 rounded-lg p-4 h-[150px] overflow-y-auto">
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Sparkles className="h-5 w-5 text-blogSphere-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm bg-blogSphere-50 p-2 rounded-lg">
-                          How can I help with your writing today?
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Textarea 
-                      placeholder="Ask something about your content..."
-                      className="resize-none"
-                      rows={1}
-                    />
-                    <Button size="icon">
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="flex gap-2 flex-wrap">
-                    <p className="text-xs text-muted-foreground mb-1 w-full">Suggested questions:</p>
-                    <Button variant="outline" size="sm" className="text-xs h-7">How can I make my intro more engaging?</Button>
-                    <Button variant="outline" size="sm" className="text-xs h-7">Suggest a better title</Button>
-                    <Button variant="outline" size="sm" className="text-xs h-7">Help me with transitions</Button>
-                  </div>
+                  {!content && (
+                    <p className="text-sm text-center py-4 text-muted-foreground">
+                      Start writing to use the rewrite features
+                    </p>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { 
   Search, 
   PenSquare, 
-  Bell, 
   ChevronDown,
   User
 } from "lucide-react";
@@ -19,7 +18,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-  const { user, isAuthenticated, notifications, signout } = useAuth();
+  const { user, isAuthenticated, signout } = useAuth();
   const navigate = useNavigate();
   
   const handleSignOut = () => {
@@ -60,14 +59,6 @@ const Navbar = () => {
                   <span>Write</span>
                 </Button>
               </Link>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                {notifications > 0 && (
-                  <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white">
-                    {notifications}
-                  </span>
-                )}
-              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 relative flex items-center">
