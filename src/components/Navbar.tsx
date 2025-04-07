@@ -23,7 +23,7 @@ const Navbar = () => {
   
   const handleSignOut = () => {
     signout();
-    navigate("/");
+    navigate("/sign-in");
   };
   
   return (
@@ -47,9 +47,6 @@ const Navbar = () => {
         <nav className="flex items-center gap-4">
           <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
             Home
-          </Link>
-          <Link to="/categories" className="text-muted-foreground hover:text-foreground transition-colors">
-            Categories
           </Link>
           {isAuthenticated && user ? (
             <>
@@ -87,12 +84,6 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link to="/create-post">
-                <Button variant="outline" className="gap-2">
-                  <PenSquare className="h-4 w-4" />
-                  <span>Write</span>
-                </Button>
-              </Link>
               <Link to="/sign-in">
                 <Button>Sign In</Button>
               </Link>

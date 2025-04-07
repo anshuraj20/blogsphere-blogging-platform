@@ -9,42 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import PostCard from "@/components/PostCard";
-import { useAuth } from "@/contexts/AuthContext";
-
-// Mock posts data for demonstration
-const USER_POSTS = [
-  {
-    id: "1",
-    title: "The Art of Mindful Writing: Finding Your Creative Flow",
-    excerpt: "Discover techniques to develop your unique writing voice and connect with your audience.",
-    coverImage: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
-    author: {
-      name: "User",
-      avatar: "",
-    },
-    category: "Writing Tips",
-    readTime: "5 min read",
-    commentsCount: 24,
-    likesCount: 152,
-  },
-  {
-    id: "2",
-    title: "10 Tools Every Writer Should Know About in 2025",
-    excerpt: "Explore the essential tools that can transform your writing workflow and boost productivity.",
-    coverImage: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
-    author: {
-      name: "User",
-      avatar: "",
-    },
-    category: "Productivity",
-    readTime: "7 min read",
-    commentsCount: 18,
-    likesCount: 87,
-  },
-];
+import { useAuth, Post } from "@/contexts/AuthContext";
 
 const UserProfile = () => {
-  const { user } = useAuth();
+  const { user, getUserPosts } = useAuth();
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -52,6 +20,7 @@ const UserProfile = () => {
     joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [publishedPosts, setPublishedPosts] = useState<Post[]>([]);
   const { toast } = useToast();
 
   // Update userData when user context changes
@@ -66,8 +35,13 @@ const UserProfile = () => {
         bio: savedBio || "Write something about yourself...",
         joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       });
+      
+      // Get only published posts
+      const userPosts = getUserPosts();
+      const onlyPublished = userPosts.filter(post => post.status === "published");
+      setPublishedPosts(onlyPublished);
     }
-  }, [user]);
+  }, [user, getUserPosts]);
 
   const handleSaveProfile = () => {
     setIsEditing(false);
@@ -133,21 +107,36 @@ const UserProfile = () => {
             </TabsList>
             <TabsContent value="posts" className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {USER_POSTS.map((post) => (
-                  <PostCard key={post.id} {...post} />
-                ))}
+                {publishedPosts.length > 0 ? (
+                  publishedPosts.map((post) => (
+                    <PostCard 
+                      key={post.id} 
+                      id={post.id}
+                      title={post.title}
+                      excerpt={post.excerpt}
+                      coverImage={post.coverImage}
+                      author={{
+                        name: user.name,
+                        avatar: ""
+                      }}
+                      category={post.category}
+                      readTime={`${Math.ceil(post.content.length / 1000)} min read`}
+                      commentsCount={post.commentsCount}
+                      likesCount={post.likesCount}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-12 col-span-2">
+                    <h3 className="text-xl font-medium mb-2">No published posts yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start writing and publish your first post
+                    </p>
+                    <Link to="/create-post">
+                      <Button>Create New Post</Button>
+                    </Link>
+                  </div>
+                )}
               </div>
-              {USER_POSTS.length === 0 && (
-                <div className="text-center py-12">
-                  <h3 className="text-xl font-medium mb-2">No posts yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start writing and publish your first post
-                  </p>
-                  <Link to="/create-post">
-                    <Button>Create New Post</Button>
-                  </Link>
-                </div>
-              )}
             </TabsContent>
             <TabsContent value="settings" className="space-y-8">
               <div className="bg-white rounded-lg shadow p-6 space-y-6">

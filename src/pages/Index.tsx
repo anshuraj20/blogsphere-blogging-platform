@@ -2,7 +2,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import FeaturedPosts from "@/components/FeaturedPosts";
-import CategoryList from "@/components/CategoryList";
 import PostCard from "@/components/PostCard";
 import { Button } from "@/components/ui/button";
 
@@ -81,35 +80,14 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="md:col-span-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {RECENT_POSTS.map((post) => (
                     <PostCard key={post.id} {...post} />
                   ))}
                 </div>
                 <div className="mt-8 text-center">
                   <Button variant="outline" size="lg">Load More Articles</Button>
-                </div>
-              </div>
-              
-              <div className="md:col-span-1 space-y-8">
-                <CategoryList />
-                
-                <div className="bg-blogSphere-50 p-6 rounded-lg border border-blogSphere-100">
-                  <h3 className="font-serif text-xl font-bold mb-4">Join Our Newsletter</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Get the latest articles, resources and writing tips delivered to your inbox.
-                  </p>
-                  <form className="space-y-4">
-                    <input 
-                      type="email" 
-                      placeholder="Your email address" 
-                      className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blogSphere-500"
-                    />
-                    <Button className="w-full bg-blogSphere-600 hover:bg-blogSphere-700">
-                      Subscribe
-                    </Button>
-                  </form>
                 </div>
               </div>
             </div>
@@ -130,7 +108,6 @@ const Index = () => {
               <h4 className="font-bold mb-4">Explore</h4>
               <ul className="space-y-2">
                 <li><a href="#" className="text-blogSphere-200 hover:text-white transition-colors">Home</a></li>
-                <li><a href="#" className="text-blogSphere-200 hover:text-white transition-colors">Categories</a></li>
                 <li><a href="#" className="text-blogSphere-200 hover:text-white transition-colors">Popular Posts</a></li>
                 <li><a href="#" className="text-blogSphere-200 hover:text-white transition-colors">About Us</a></li>
               </ul>

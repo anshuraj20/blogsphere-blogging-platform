@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Sparkles, Users, Shield, PenSquare } from "lucide-react";
+import { Sparkles, Users, Shield } from "lucide-react";
 
 const Hero = () => {
   return (
@@ -17,12 +17,7 @@ const Hero = () => {
             </p>
           </div>
           
-          <div className="space-x-4">
-            <Link to="/categories">
-              <Button className="bg-blogSphere-600 hover:bg-blogSphere-700">
-                Explore Topics
-              </Button>
-            </Link>
+          <div>
             <Link to="/create-post">
               <Button variant="outline">Start Writing</Button>
             </Link>
