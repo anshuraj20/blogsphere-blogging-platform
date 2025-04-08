@@ -17,7 +17,7 @@ const DUMMY_FEATURED_POSTS = [
     },
     category: "Creativity",
     tags: ["mindfulness", "writing", "creativity"],
-    status: "published",
+    status: "published" as "published" | "draft",
     publishDate: "2025-02-15",
     views: 2450,
     commentsCount: 24,
@@ -35,7 +35,7 @@ const DUMMY_FEATURED_POSTS = [
     },
     category: "Technology",
     tags: ["writing tools", "productivity", "technology"],
-    status: "published",
+    status: "published" as "published" | "draft",
     publishDate: "2025-01-22",
     views: 1850,
     commentsCount: 18,
@@ -53,7 +53,7 @@ const DUMMY_FEATURED_POSTS = [
     },
     category: "Publishing",
     tags: ["digital publishing", "future trends", "technology"],
-    status: "published",
+    status: "published" as "published" | "draft",
     publishDate: "2025-03-10",
     views: 2120,
     commentsCount: 31,
@@ -68,7 +68,7 @@ const FeaturedPosts = () => {
   // Add dummy posts to the context when component mounts
   useEffect(() => {
     if (!isLoaded) {
-      addDummyPosts(DUMMY_FEATURED_POSTS);
+      addDummyPosts(DUMMY_FEATURED_POSTS as Post[]);
       setIsLoaded(true);
     }
   }, [addDummyPosts, isLoaded]);

@@ -21,6 +21,7 @@ const UserProfile = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [publishedPosts, setPublishedPosts] = useState<Post[]>([]);
+  const [activeTab, setActiveTab] = useState("posts");
   const { toast } = useToast();
 
   // Update userData when user context changes
@@ -57,6 +58,10 @@ const UserProfile = () => {
     });
   };
 
+  const handleEditProfile = () => {
+    setActiveTab("settings");
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -90,8 +95,8 @@ const UserProfile = () => {
                   <span className="text-muted-foreground">Joined {userData.joinedDate}</span>
                 </div>
                 <div className="flex gap-3 justify-center md:justify-start">
-                  <Button onClick={() => setIsEditing(!isEditing)}>
-                    {isEditing ? "Cancel" : "Edit Profile"}
+                  <Button onClick={handleEditProfile}>
+                    Edit Profile
                   </Button>
                 </div>
               </div>
@@ -100,7 +105,7 @@ const UserProfile = () => {
         </div>
 
         <div className="container px-4 md:px-6 py-8">
-          <Tabs defaultValue="posts" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full md:w-auto grid-cols-2 mb-8">
               <TabsTrigger value="posts">Posts</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>

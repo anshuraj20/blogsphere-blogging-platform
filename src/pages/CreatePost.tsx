@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -106,7 +105,7 @@ const CreatePost = () => {
       reader.onloadend = () => {
         const result = reader.result as string;
         setImagePreview(result);
-        setCoverImage(""); // Clear external URL when file is selected
+        setCoverImage("");
       };
       reader.readAsDataURL(file);
       
@@ -121,15 +120,6 @@ const CreatePost = () => {
     setImageFile(null);
     setImagePreview("");
     setCoverImage("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-  
-  const handleExternalImageUrl = (url: string) => {
-    setCoverImage(url);
-    setImagePreview(url);
-    setImageFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -382,28 +372,6 @@ const CreatePost = () => {
                                 </p>
                               </div>
                             )}
-                          </div>
-                          
-                          {/* Or use external URL */}
-                          <div className="text-center relative">
-                            <div className="absolute inset-0 flex items-center">
-                              <span className="w-full border-t"></span>
-                            </div>
-                            <div className="relative flex justify-center">
-                              <span className="bg-background px-2 text-xs text-muted-foreground">
-                                Or use external URL
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <Input
-                              id="cover-image-url"
-                              placeholder="Enter image URL"
-                              value={coverImage}
-                              onChange={(e) => handleExternalImageUrl(e.target.value)}
-                              className="flex-grow"
-                            />
                           </div>
                         </div>
                       </div>
