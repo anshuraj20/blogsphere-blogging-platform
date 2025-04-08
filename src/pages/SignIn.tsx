@@ -39,6 +39,7 @@ const SignIn = () => {
           title: "Sign in successful",
           description: "Welcome back to BlogSphere!",
         });
+        // Redirect to the home page after successful login
         navigate("/");
       } else {
         setError("Invalid email or password. Please try again.");

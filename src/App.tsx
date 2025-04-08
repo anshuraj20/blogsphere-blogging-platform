@@ -35,15 +35,21 @@ const AppRoutes = () => {
   
   return (
     <Routes>
-      {/* Redirect to sign-in if not authenticated */}
+      {/* Redirect to home page if authenticated */}
       <Route path="/" element={
         isAuthenticated ? <ProtectedRoute><Index /></ProtectedRoute> : <Navigate to="/sign-in" replace />
       } />
       
-      {/* Public Routes */}
-      <Route path="/sign-in" element={<SignIn />} />
-      <Route path="/sign-up" element={<SignUp />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      {/* Public Routes - Redirect to home if already authenticated */}
+      <Route path="/sign-in" element={
+        isAuthenticated ? <Navigate to="/" replace /> : <SignIn />
+      } />
+      <Route path="/sign-up" element={
+        isAuthenticated ? <Navigate to="/" replace /> : <SignUp />
+      } />
+      <Route path="/reset-password" element={
+        isAuthenticated ? <Navigate to="/" replace /> : <ResetPassword />
+      } />
       
       {/* Protected Routes */}
       <Route path="/post/:id" element={<ProtectedRoute><Post /></ProtectedRoute>} />
