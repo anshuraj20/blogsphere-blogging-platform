@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -96,7 +97,7 @@ const UserProfile = () => {
                 </div>
                 <div className="flex gap-3 justify-center md:justify-start">
                   <Button onClick={handleEditProfile}>
-                    Edit Profile
+                    Edit Profile Settings
                   </Button>
                 </div>
               </div>
