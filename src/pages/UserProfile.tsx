@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -60,6 +59,7 @@ const UserProfile = () => {
 
   const handleEditProfile = () => {
     setActiveTab("settings");
+    setIsEditing(true);
   };
 
   if (!user) {
@@ -106,9 +106,8 @@ const UserProfile = () => {
 
         <div className="container px-4 md:px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full md:w-auto grid-cols-2 mb-8">
+            <TabsList className="grid w-full md:w-auto grid-cols-1 mb-8">
               <TabsTrigger value="posts">Posts</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
             <TabsContent value="posts" className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -143,6 +142,8 @@ const UserProfile = () => {
                 )}
               </div>
             </TabsContent>
+            
+            {/* Keep settings content but it will be shown when Edit Profile is clicked */}
             <TabsContent value="settings" className="space-y-8">
               <div className="bg-white rounded-lg shadow p-6 space-y-6">
                 <h2 className="text-2xl font-bold">Profile Settings</h2>
