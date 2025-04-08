@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BookOpen, MessageSquare, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface PostCardProps {
   id: string;
@@ -66,11 +67,11 @@ const PostCard = ({
       
       <CardFooter className="p-4 pt-0 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <img 
-            src={author.avatar}
-            alt={author.name}
-            className="rounded-full h-8 w-8 object-cover"
-          />
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-blogSphere-100 text-blogSphere-700">
+              {author.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
           <span className="text-sm font-medium">{author.name}</span>
         </div>
         

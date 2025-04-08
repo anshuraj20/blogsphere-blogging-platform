@@ -14,7 +14,7 @@ const Post = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, getUserPosts, updateUserPost, deleteUserPost } = useAuth();
+  const { user, getUserPosts, updateUserPost, deleteUserPost, getAllPosts } = useAuth();
   const [post, setPost] = useState<PostType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,16 +23,29 @@ const Post = () => {
   
   // Initialize post data
   useEffect(() => {
-    if (id && user) {
+    if (id) {
       setIsLoading(true);
       try {
-        const userPosts = getUserPosts();
-        const foundPost = userPosts.find(post => post.id === id);
+        // First try to find in user posts if user is logged in
+        let foundPost = null;
+        
+        if (user) {
+          const userPosts = getUserPosts();
+          foundPost = userPosts.find(post => post.id === id);
+        }
+        
+        // If not found in user posts, look in all posts (including dummy posts)
+        if (!foundPost) {
+          const allPosts = getAllPosts();
+          foundPost = allPosts.find(post => post.id === id);
+        }
         
         if (foundPost) {
           setPost(foundPost);
-          // Update view count
-          updateUserPost(id, { views: foundPost.views + 1 });
+          // Update view count if it's user's post
+          if (foundPost.author.id === user?.id) {
+            updateUserPost(id, { views: foundPost.views + 1 });
+          }
         } else {
           setError("Post not found");
         }
@@ -43,13 +56,18 @@ const Post = () => {
         setIsLoading(false);
       }
     }
-  }, [id, user, getUserPosts, updateUserPost]);
+  }, [id, user, getUserPosts, updateUserPost, getAllPosts]);
 
   const handleLike = () => {
-    if (!post || !user) return;
+    if (!post) return;
     
     const newLikeCount = isLiked ? post.likesCount - 1 : post.likesCount + 1;
-    updateUserPost(post.id, { likesCount: newLikeCount });
+    
+    // Only update in database if it's user's post
+    if (user && post.author.id === user.id) {
+      updateUserPost(post.id, { likesCount: newLikeCount });
+    }
+    
     setPost({...post, likesCount: newLikeCount});
     setIsLiked(!isLiked);
     
@@ -138,7 +156,7 @@ const Post = () => {
       <main className="flex-grow">
         {/* Cover image */}
         {post.coverImage && (
-          <div className="w-full h-[400px] relative">
+          <div className="w-full h-[300px] md:h-[400px] relative">
             <img 
               src={post.coverImage}
               alt={post.title}

@@ -37,9 +37,11 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   signout: () => void;
   getUserPosts: () => Post[];
+  getAllPosts: () => Post[];
   addUserPost: (post: Omit<Post, 'id' | 'author'>) => Post;
   updateUserPost: (postId: string, updatedPost: Partial<Post>) => boolean;
   deleteUserPost: (postId: string) => boolean;
+  addDummyPosts: (posts: Post[]) => void;
 }
 
 // Create the context
@@ -54,6 +56,9 @@ const DEMO_USERS = [
     password: "password123",
   },
 ];
+
+// Global dummy posts storage
+let DUMMY_POSTS: Post[] = [];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -143,6 +148,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     return [];
   };
+  
+  // Get all posts (user posts + dummy posts)
+  const getAllPosts = (): Post[] => {
+    const userPosts = user ? getUserPosts() : [];
+    return [...userPosts, ...DUMMY_POSTS];
+  };
+  
+  // Add dummy posts to global storage
+  const addDummyPosts = (posts: Post[]) => {
+    // Check if posts already exist by ID to avoid duplicates
+    const newPosts = posts.filter(post => 
+      !DUMMY_POSTS.some(existingPost => existingPost.id === post.id)
+    );
+    
+    // Only add new posts
+    if (newPosts.length > 0) {
+      DUMMY_POSTS = [...DUMMY_POSTS, ...newPosts];
+    }
+  };
 
   // Add a new post
   const addUserPost = (post: Omit<Post, 'id' | 'author'>): Post => {
@@ -207,9 +231,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signup, 
       signout,
       getUserPosts,
+      getAllPosts,
       addUserPost,
       updateUserPost,
-      deleteUserPost
+      deleteUserPost,
+      addDummyPosts
     }}>
       {children}
     </AuthContext.Provider>
