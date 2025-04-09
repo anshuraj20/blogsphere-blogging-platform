@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -32,6 +33,7 @@ import {
   X,
   Mic,
   MicOff,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth, Post } from "@/contexts/AuthContext";
 
@@ -46,10 +48,16 @@ interface SpeechRecognition extends EventTarget {
   onerror: (event: SpeechRecognitionErrorEvent) => void;
   onend: () => void;
   onstart: () => void;
+  onspeechstart?: () => void;
+  onspeechend?: () => void;
+  onaudiostart?: () => void;
+  onaudioend?: () => void;
+  onnomatch?: () => void;
 }
 
 interface SpeechRecognitionErrorEvent extends Event {
   error: string;
+  message?: string;
 }
 
 interface SpeechRecognitionEvent extends Event {
@@ -106,6 +114,8 @@ const CreatePost = () => {
   // Speech recognition states
   const [isListening, setIsListening] = useState(false);
   const [recognitionInstance, setRecognitionInstance] = useState<SpeechRecognition | null>(null);
+  const [recognitionError, setRecognitionError] = useState<string | null>(null);
+  const [microphonePermission, setMicrophonePermission] = useState<boolean | null>(null);
   
   // Load post data if in edit mode
   useEffect(() => {
@@ -123,6 +133,25 @@ const CreatePost = () => {
       }
     }
   }, [isEditMode, id, user, getUserPosts]);
+  
+  // Check for microphone permission
+  useEffect(() => {
+    const checkMicrophonePermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // If we get here, permission is granted
+        setMicrophonePermission(true);
+        
+        // Close the stream since we're just checking permission
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        console.error("Microphone permission error:", err);
+        setMicrophonePermission(false);
+      }
+    };
+    
+    checkMicrophonePermission();
+  }, []);
   
   const formatDate = () => {
     const now = new Date();
@@ -171,73 +200,172 @@ const CreatePost = () => {
     }
   };
   
+  // Request microphone permission again
+  const requestMicrophonePermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicrophonePermission(true);
+      
+      // Close the stream
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Start listening now that we have permission
+      startListening();
+    } catch (err) {
+      console.error("Failed to get microphone permission:", err);
+      setMicrophonePermission(false);
+      toast({
+        title: "Permission Denied",
+        description: "Please allow microphone access in your browser settings to use speech-to-text",
+        variant: "destructive"
+      });
+    }
+  };
+  
   // Speech recognition setup and functions
   const startListening = () => {
+    // Reset any previous errors
+    setRecognitionError(null);
+    
+    // Check if microphone permission is granted
+    if (microphonePermission === false) {
+      requestMicrophonePermission();
+      return;
+    }
+    
     // Check if the browser supports the Web Speech API
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (SpeechRecognitionAPI) {
-      // Initialize SpeechRecognition API
-      const recognition = new SpeechRecognitionAPI();
-      
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
-      recognition.onstart = () => {
-        setIsListening(true);
-        toast({
-          title: "Listening started",
-          description: "Speak now, your words will be transcribed"
-        });
-      };
-      
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+      try {
+        // Initialize SpeechRecognition API
+        const recognition = new SpeechRecognitionAPI();
         
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = () => {
+          console.log("Speech recognition started");
+          setIsListening(true);
+          toast({
+            title: "Listening started",
+            description: "Speak now, your words will be transcribed"
+          });
+        };
+        
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          console.log("Speech recognition result received");
+          let interimTranscript = '';
+          let finalTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
+            }
           }
-        }
+          
+          if (finalTranscript) {
+            setContent(prev => {
+              // Add a space if the previous content doesn't end with one
+              const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+              return prev + spacer + finalTranscript;
+            });
+          }
+        };
         
-        if (finalTranscript) {
-          setContent(prev => {
-            // Add a space if the previous content doesn't end with one
-            const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
-            return prev + spacer + finalTranscript;
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error('Speech recognition error', event.error, event.message);
+          setRecognitionError(event.error);
+          
+          let errorMessage = "There was an error with speech recognition.";
+          
+          // Handle specific error types
+          switch (event.error) {
+            case 'network':
+              errorMessage = "Network error. Please check your internet connection and try again.";
+              break;
+            case 'not-allowed':
+            case 'permission-denied':
+              errorMessage = "Microphone access was denied. Please check your browser permissions.";
+              setMicrophonePermission(false);
+              break;
+            case 'aborted':
+              errorMessage = "Speech recognition was aborted.";
+              break;
+            case 'audio-capture':
+              errorMessage = "No microphone was detected or it's not working properly.";
+              break;
+            case 'no-speech':
+              errorMessage = "No speech was detected. Please try speaking again.";
+              break;
+            case 'service-not-allowed':
+              errorMessage = "Speech recognition service is not allowed on this device or browser.";
+              break;
+          }
+          
+          toast({
+            title: "Speech Recognition Error",
+            description: errorMessage,
+            variant: "destructive"
+          });
+          
+          setIsListening(false);
+          setRecognitionInstance(null);
+        };
+        
+        recognition.onend = () => {
+          console.log("Speech recognition ended");
+          // Only restart if we're still supposed to be listening and there was no error
+          if (isListening && !recognitionError) {
+            console.log("Restarting speech recognition");
+            try {
+              recognition.start();
+            } catch (e) {
+              console.error("Error restarting recognition:", e);
+              setIsListening(false);
+              setRecognitionInstance(null);
+            }
+          } else {
+            setIsListening(false);
+            setRecognitionInstance(null);
+          }
+        };
+        
+        // Additional handlers for better debugging
+        recognition.onaudiostart = () => console.log("Audio capturing started");
+        recognition.onaudioend = () => console.log("Audio capturing ended");
+        recognition.onspeechstart = () => console.log("Speech detected");
+        recognition.onspeechend = () => console.log("Speech ended");
+        recognition.onnomatch = () => console.log("No match found");
+        
+        // Try to start recognition
+        try {
+          recognition.start();
+          setRecognitionInstance(recognition);
+        } catch (e) {
+          console.error("Error starting recognition:", e);
+          toast({
+            title: "Error",
+            description: "Could not start speech recognition. Please try again.",
+            variant: "destructive"
           });
         }
-      };
-      
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Speech recognition error', event.error);
+      } catch (e) {
+        console.error("Error initializing speech recognition:", e);
         toast({
           title: "Error",
-          description: `Speech recognition error: ${event.error}`,
+          description: "Could not initialize speech recognition. Please try again.",
           variant: "destructive"
         });
-        setIsListening(false);
-      };
-      
-      recognition.onend = () => {
-        if (isListening) {
-          recognition.start(); // Restart if we're still supposed to be listening
-        } else {
-          setRecognitionInstance(null);
-        }
-      };
-      
-      recognition.start();
-      setRecognitionInstance(recognition);
+      }
     } else {
       toast({
         title: "Not supported",
-        description: "Speech recognition is not supported in your browser",
+        description: "Speech recognition is not supported in your browser. Try using Chrome, Edge, or Safari.",
         variant: "destructive"
       });
     }
@@ -245,12 +373,18 @@ const CreatePost = () => {
   
   const stopListening = () => {
     if (recognitionInstance) {
-      recognitionInstance.stop();
-      setIsListening(false);
-      toast({
-        title: "Listening stopped",
-        description: "Speech recognition has been stopped"
-      });
+      try {
+        recognitionInstance.stop();
+        toast({
+          title: "Listening stopped",
+          description: "Speech recognition has been stopped"
+        });
+      } catch (e) {
+        console.error("Error stopping recognition:", e);
+      } finally {
+        setIsListening(false);
+        setRecognitionInstance(null);
+      }
     }
   };
   
@@ -266,7 +400,11 @@ const CreatePost = () => {
   useEffect(() => {
     return () => {
       if (recognitionInstance) {
-        recognitionInstance.stop();
+        try {
+          recognitionInstance.stop();
+        } catch (e) {
+          console.error("Error stopping recognition on unmount:", e);
+        }
       }
     };
   }, [recognitionInstance]);
@@ -525,25 +663,35 @@ const CreatePost = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <Label htmlFor="content">Content</Label>
-                          <Button
-                            type="button"
-                            variant={isListening ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={toggleListening}
-                            className="ml-2"
-                          >
-                            {isListening ? (
-                              <>
-                                <MicOff className="h-4 w-4 mr-2" />
-                                Stop Dictation
-                              </>
-                            ) : (
-                              <>
-                                <Mic className="h-4 w-4 mr-2" />
-                                Start Dictation
-                              </>
+                          <div className="flex items-center gap-2">
+                            {recognitionError && (
+                              <div className="flex items-center text-destructive text-xs">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                <span>Error: {recognitionError}</span>
+                              </div>
                             )}
-                          </Button>
+                            <Button
+                              type="button"
+                              variant={isListening ? "destructive" : "outline"}
+                              size="sm"
+                              onClick={toggleListening}
+                              disabled={microphonePermission === false}
+                              title={microphonePermission === false ? "Microphone permission is required" : ""}
+                              className="ml-2"
+                            >
+                              {isListening ? (
+                                <>
+                                  <MicOff className="h-4 w-4 mr-2" />
+                                  Stop Dictation
+                                </>
+                              ) : (
+                                <>
+                                  <Mic className="h-4 w-4 mr-2" />
+                                  Start Dictation
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                         
                         <div className="relative">
@@ -563,6 +711,24 @@ const CreatePost = () => {
                             </div>
                           )}
                         </div>
+                        
+                        {microphonePermission === false && (
+                          <div className="text-sm p-2 border border-orange-200 bg-orange-50 rounded text-orange-800 flex items-start gap-2 mt-2">
+                            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium">Microphone access is required for speech-to-text</p>
+                              <p className="text-xs mt-1">Please allow microphone access in your browser settings and refresh the page.</p>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mt-2 h-7 text-xs"
+                                onClick={requestMicrophonePermission}
+                              >
+                                Request Permission Again
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -676,3 +842,4 @@ const CreatePost = () => {
 };
 
 export default CreatePost;
+
