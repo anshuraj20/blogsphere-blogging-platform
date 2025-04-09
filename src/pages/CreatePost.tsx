@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -30,6 +31,8 @@ import {
   CheckCircle,
   Upload,
   X,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { useAuth, Post } from "@/contexts/AuthContext";
 
@@ -60,6 +63,10 @@ const CreatePost = () => {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  
+  // Speech recognition states
+  const [isListening, setIsListening] = useState(false);
+  const [recognitionInstance, setRecognitionInstance] = useState<SpeechRecognition | null>(null);
   
   // Load post data if in edit mode
   useEffect(() => {
@@ -124,6 +131,104 @@ const CreatePost = () => {
       fileInputRef.current.value = "";
     }
   };
+  
+  // Speech recognition setup and functions
+  const startListening = () => {
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      // Initialize SpeechRecognition API
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast({
+          title: "Listening started",
+          description: "Speak now, your words will be transcribed"
+        });
+      };
+      
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+          setContent(prev => {
+            // Add a space if the previous content doesn't end with one
+            const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+            return prev + spacer + finalTranscript;
+          });
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        toast({
+          title: "Error",
+          description: `Speech recognition error: ${event.error}`,
+          variant: "destructive"
+        });
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        if (isListening) {
+          recognition.start(); // Restart if we're still supposed to be listening
+        } else {
+          setRecognitionInstance(null);
+        }
+      };
+      
+      recognition.start();
+      setRecognitionInstance(recognition);
+    } else {
+      toast({
+        title: "Not supported",
+        description: "Speech recognition is not supported in your browser",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const stopListening = () => {
+    if (recognitionInstance) {
+      recognitionInstance.stop();
+      setIsListening(false);
+      toast({
+        title: "Listening stopped",
+        description: "Speech recognition has been stopped"
+      });
+    }
+  };
+  
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+  
+  // Clean up speech recognition on component unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionInstance) {
+        recognitionInstance.stop();
+      }
+    };
+  }, [recognitionInstance]);
   
   const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
@@ -377,14 +482,46 @@ const CreatePost = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="content">Content</Label>
-                        <Textarea
-                          id="content"
-                          placeholder="Write your post here..."
-                          value={content}
-                          onChange={(e) => setContent(e.target.value)}
-                          className="min-h-[300px]"
-                        />
+                        <div className="flex justify-between items-center">
+                          <Label htmlFor="content">Content</Label>
+                          <Button
+                            type="button"
+                            variant={isListening ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={toggleListening}
+                            className="ml-2"
+                          >
+                            {isListening ? (
+                              <>
+                                <MicOff className="h-4 w-4 mr-2" />
+                                Stop Dictation
+                              </>
+                            ) : (
+                              <>
+                                <Mic className="h-4 w-4 mr-2" />
+                                Start Dictation
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        
+                        <div className="relative">
+                          <Textarea
+                            id="content"
+                            placeholder="Write your post here or use speech-to-text by clicking the microphone button..."
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            className={`min-h-[300px] ${isListening ? 'border-green-500 focus-visible:ring-green-500' : ''}`}
+                          />
+                          
+                          {isListening && (
+                            <div className="absolute bottom-3 right-3">
+                              <div className="flex items-center justify-center h-8 w-8 bg-green-500 rounded-full animate-pulse">
+                                <Mic className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -485,7 +622,7 @@ const CreatePost = () => {
                     <div className="rounded-full bg-green-100 p-1.5">
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Preview your post to see how it will appear to readers</p>
+                    <p className="text-sm text-muted-foreground">Try using speech-to-text to capture your thoughts naturally</p>
                   </div>
                 </CardContent>
               </Card>
