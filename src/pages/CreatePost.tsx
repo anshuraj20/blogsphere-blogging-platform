@@ -36,6 +36,55 @@ import {
 } from "lucide-react";
 import { useAuth, Post } from "@/contexts/AuthContext";
 
+// Add type declaration for Web Speech API
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface Window {
+  SpeechRecognition?: {
+    new (): SpeechRecognition;
+  };
+  webkitSpeechRecognition?: {
+    new (): SpeechRecognition;
+  };
+}
+
 // Mock data for categories
 const CATEGORIES = [
   { value: "technology", label: "Technology" },
@@ -135,64 +184,73 @@ const CreatePost = () => {
   // Speech recognition setup and functions
   const startListening = () => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      // Initialize SpeechRecognition API
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
+      // Initialize SpeechRecognition API with proper type handling
+      const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
       
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
-      recognition.onstart = () => {
-        setIsListening(true);
-        toast({
-          title: "Listening started",
-          description: "Speak now, your words will be transcribed"
-        });
-      };
-      
-      recognition.onresult = (event) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+      if (SpeechRecognitionConstructor) {
+        const recognition = new SpeechRecognitionConstructor();
         
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
-          }
-        }
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
         
-        if (finalTranscript) {
-          setContent(prev => {
-            // Add a space if the previous content doesn't end with one
-            const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
-            return prev + spacer + finalTranscript;
+        recognition.onstart = () => {
+          setIsListening(true);
+          toast({
+            title: "Listening started",
+            description: "Speak now, your words will be transcribed"
           });
-        }
-      };
-      
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
+        };
+        
+        recognition.onresult = (event) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          
+          if (finalTranscript) {
+            setContent(prev => {
+              // Add a space if the previous content doesn't end with one
+              const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+              return prev + spacer + finalTranscript;
+            });
+          }
+        };
+        
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error', event.error);
+          toast({
+            title: "Error",
+            description: `Speech recognition error: ${event.error}`,
+            variant: "destructive"
+          });
+          setIsListening(false);
+        };
+        
+        recognition.onend = () => {
+          if (isListening) {
+            recognition.start(); // Restart if we're still supposed to be listening
+          } else {
+            setRecognitionInstance(null);
+          }
+        };
+        
+        recognition.start();
+        setRecognitionInstance(recognition);
+      } else {
         toast({
-          title: "Error",
-          description: `Speech recognition error: ${event.error}`,
+          title: "Not supported",
+          description: "Speech recognition constructor not available",
           variant: "destructive"
         });
-        setIsListening(false);
-      };
-      
-      recognition.onend = () => {
-        if (isListening) {
-          recognition.start(); // Restart if we're still supposed to be listening
-        } else {
-          setRecognitionInstance(null);
-        }
-      };
-      
-      recognition.start();
-      setRecognitionInstance(recognition);
+      }
     } else {
       toast({
         title: "Not supported",
