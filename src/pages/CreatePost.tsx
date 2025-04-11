@@ -126,11 +126,6 @@ const CreatePost = () => {
     }
   };
   
-  // Handle speech recognition transcript updates
-  const handleTranscriptUpdate = (newContent: string) => {
-    setContent(newContent);
-  };
-  
   const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
     
@@ -386,18 +381,14 @@ const CreatePost = () => {
                         <div className="flex justify-between items-center">
                           <Label htmlFor="content">Content</Label>
                           
-                          {/* Replace the old microphone button with our new component */}
-                          <SpeechToTextButton 
-                            onTranscriptChange={handleTranscriptUpdate}
-                            initialContent={content}
-                            className="ml-2"
-                          />
+                          {/* Windows Speech-to-Text button */}
+                          <SpeechToTextButton className="ml-2" />
                         </div>
                         
                         <div className="relative">
                           <Textarea
                             id="content"
-                            placeholder="Write your post here or use speech-to-text by clicking the microphone button..."
+                            placeholder="Write your post here or use Windows speech-to-text (Win+H)..."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             className="min-h-[300px]"
@@ -503,7 +494,7 @@ const CreatePost = () => {
                     <div className="rounded-full bg-green-100 p-1.5">
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Try using speech-to-text to capture your thoughts naturally</p>
+                    <p className="text-sm text-muted-foreground">Try using Windows speech-to-text (Win+H) to capture your thoughts naturally</p>
                   </div>
                 </CardContent>
               </Card>
