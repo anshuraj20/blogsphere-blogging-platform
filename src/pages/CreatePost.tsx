@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import AIWritingAssistant from "@/components/AIWritingAssistant";
-import SpeechToTextButton from "@/components/SpeechToTextButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -378,13 +377,7 @@ const CreatePost = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Label htmlFor="content">Content</Label>
-                          
-                          {/* Windows Speech-to-Text button */}
-                          <SpeechToTextButton className="ml-2" />
-                        </div>
-                        
+                        <Label htmlFor="content">Content</Label>
                         <div className="relative">
                           <Textarea
                             id="content"
