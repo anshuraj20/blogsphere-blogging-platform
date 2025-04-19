@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -9,6 +8,7 @@ import { format } from "date-fns";
 import { MessageCircle, Heart, Share2, BookmarkPlus, Pencil, Trash } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth, Post as PostType } from "@/contexts/AuthContext";
+import ReportPost from "@/components/ReportPost";
 
 const Post = () => {
   const { id } = useParams();
@@ -221,6 +221,11 @@ const Post = () => {
               <Button variant="ghost" size="icon" onClick={handleBookmark}>
                 <BookmarkPlus className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
               </Button>
+              
+              {/* Add Report button if user is not the author */}
+              {user && post.author.id !== user.id && (
+                <ReportPost postId={post.id} userId={user.id} />
+              )}
               
               {isAuthor && (
                 <>
