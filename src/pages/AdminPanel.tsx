@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import {
   BarChart2
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { containsOffensiveLanguage, getOffensiveWords } from "@/utils/offensiveLanguageDetector";
 
 // Mock data
 const REPORTED_POSTS = [
@@ -221,11 +221,16 @@ const AdminPanel = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Reports</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Reason</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">AI Moderation</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-border">
-                        {REPORTED_POSTS.map((post) => (
+                        {REPORTED_POSTS.map((post) => {
+                          // AI-based offensive language detection (checks title and reason for demo)
+                          const isOffensive = containsOffensiveLanguage(post.title + " " + post.reason);
+                          const detectedWords = getOffensiveWords(post.title + " " + post.reason);
+                          return (
                           <tr key={post.id} className={post.reviewed ? "bg-muted/20" : ""}>
                             <td className="px-6 py-4">
                               <div className="font-medium">{post.title}</div>
@@ -243,6 +248,16 @@ const AdminPanel = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {post.date}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {isOffensive ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="inline-block bg-red-500 text-white text-xs rounded-full px-2 py-0.5">Offensive language detected</span>
+                                  <span className="ml-1 text-xs text-muted-foreground">({detectedWords.join(", ")})</span>
+                                </div>
+                              ) : (
+                                <span className="inline-block bg-green-100 text-green-800 text-xs rounded-full px-2 py-0.5">Safe</span>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex space-x-2">
@@ -273,7 +288,7 @@ const AdminPanel = () => {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                        )})}
                       </tbody>
                     </table>
                   </div>
@@ -289,46 +304,58 @@ const AdminPanel = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {REPORTED_COMMENTS.map((comment) => (
-                      <div key={comment.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium">{comment.author}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {comment.date} • {comment.reportCount} reports • {comment.reason}
+                    {REPORTED_COMMENTS.map((comment) => {
+                      // AI-based offensive language detection on comment content
+                      const isOffensive = containsOffensiveLanguage(comment.content);
+                      const detectedWords = getOffensiveWords(comment.content);
+                      return (
+                        <div key={comment.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-medium">{comment.author}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {comment.date} • {comment.reportCount} reports • {comment.reason}
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground mb-2">{comment.content}</p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              {isOffensive ? (
+                                <span className="inline-block bg-red-500 text-white text-xs rounded-full px-2 py-0.5 mr-2">Offensive language detected ({detectedWords.join(", ")})</span>
+                              ) : (
+                                <span className="inline-block bg-green-100 text-green-800 text-xs rounded-full px-2 py-0.5 mr-2">Safe</span>
+                              )}
+                              <span className="text-sm text-muted-foreground">On: {comment.postTitle}</span>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-green-600"
+                                onClick={() => handleApprove(comment.id, "comment")}
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-yellow-600"
+                                onClick={() => handleWarn(comment.id, comment.author)}
+                              >
+                                Warn User
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-red-600"
+                                onClick={() => handleRemove(comment.id, "comment")}
+                              >
+                                Remove
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                        <p className="text-muted-foreground mb-2">{comment.content}</p>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-muted-foreground">On: {comment.postTitle}</div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-green-600"
-                              onClick={() => handleApprove(comment.id, "comment")}
-                            >
-                              Approve
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-yellow-600"
-                              onClick={() => handleWarn(comment.id, comment.author)}
-                            >
-                              Warn User
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-red-600"
-                              onClick={() => handleRemove(comment.id, "comment")}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
