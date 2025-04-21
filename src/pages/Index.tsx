@@ -23,6 +23,7 @@ const RECENT_DUMMY_POSTS = [
     tags: ["personal branding", "writing career", "marketing"],
     status: "published" as "published" | "draft",
     publishDate: "2025-02-28",
+    createdDate: "2025-02-25", // Add createdDate
     views: 1420,
     commentsCount: 14,
     likesCount: 87,
@@ -41,6 +42,7 @@ const RECENT_DUMMY_POSTS = [
     tags: ["psychology", "storytelling", "writing craft"],
     status: "published" as "published" | "draft",
     publishDate: "2025-01-15",
+    createdDate: "2025-01-10", // Add createdDate
     views: 1890,
     commentsCount: 22,
     likesCount: 134,
@@ -59,6 +61,7 @@ const RECENT_DUMMY_POSTS = [
     tags: ["writing voice", "authenticity", "writing craft"],
     status: "published" as "published" | "draft",
     publishDate: "2025-03-22",
+    createdDate: "2025-03-15", // Add createdDate
     views: 1580,
     commentsCount: 19,
     likesCount: 112,
@@ -77,6 +80,7 @@ const RECENT_DUMMY_POSTS = [
     tags: ["self-publishing", "book marketing", "indie author"],
     status: "published" as "published" | "draft",
     publishDate: "2025-02-05",
+    createdDate: "2025-01-28", // Add createdDate
     views: 2250,
     commentsCount: 28,
     likesCount: 165,

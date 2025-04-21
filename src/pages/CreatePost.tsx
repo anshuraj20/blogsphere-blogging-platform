@@ -196,6 +196,7 @@ const CreatePost = () => {
           status: isDraft ? "draft" : "published",
           publishDate: isDraft ? undefined : currentDate,
           lastEdit: currentDate,
+          createdDate: currentDate, // Add the createdDate property
           views: 0,
           commentsCount: 0,
           likesCount: 0,
