@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 // User type definition
@@ -24,6 +23,7 @@ export interface Post {
   status: "published" | "draft";
   publishDate?: string;
   lastEdit?: string;
+  createdDate: string; // Ensuring createdDate is explicitly defined
   views: number;
   commentsCount: number;
   likesCount: number;
@@ -38,6 +38,7 @@ interface AuthContextType {
   signout: () => void;
   getUserPosts: () => Post[];
   getAllPosts: () => Post[];
+  getPosts: () => Post[]; // Adding the missing getPosts method
   addUserPost: (post: Omit<Post, 'id' | 'author'>) => Post;
   updateUserPost: (postId: string, updatedPost: Partial<Post>) => boolean;
   deleteUserPost: (postId: string) => boolean;
@@ -155,6 +156,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [...userPosts, ...DUMMY_POSTS];
   };
   
+  // Alias getAllPosts as getPosts for compatibility
+  const getPosts = (): Post[] => {
+    return getAllPosts();
+  };
+  
   // Add dummy posts to global storage
   const addDummyPosts = (posts: Post[]) => {
     // Check if posts already exist by ID to avoid duplicates
@@ -232,6 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signout,
       getUserPosts,
       getAllPosts,
+      getPosts,
       addUserPost,
       updateUserPost,
       deleteUserPost,
