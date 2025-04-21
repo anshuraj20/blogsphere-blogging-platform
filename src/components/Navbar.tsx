@@ -7,7 +7,8 @@ import {
   Search, 
   PenSquare, 
   ChevronDown,
-  User
+  User,
+  Bookmark
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Navbar = () => {
   const { user, isAuthenticated, signout } = useAuth();
@@ -59,8 +61,13 @@ const Navbar = () => {
           <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
             Home
           </Link>
+          <ThemeToggle />
           {isAuthenticated && user ? (
             <>
+              <Link to="/bookmarks" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                <Bookmark className="h-4 w-4" />
+                <span className="hidden sm:inline">Bookmarks</span>
+              </Link>
               <Link to="/create-post">
                 <Button variant="outline" className="gap-2">
                   <PenSquare className="h-4 w-4" />
